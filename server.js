@@ -1,14 +1,20 @@
 const express = require('express');
-const QueryString = require('qs');
-const PORT = process.env.PORT || 3001;
-const app = express();
+
 const { animals } = require('./data/animals');
+
+const PORT = process.env.PORT || 3001;
+
+const app = express();
+//parse incoming string or array data
+app.use(express.urlencoded({ extended: true }));
+//parse incoming JSO data
+app.use(express.json());
 
 
 function filterByQuery(query, animalsArray) {
     let personalityTraitsArray = [];
     //Not that we save the animalsArray as filteredResults here:
-    let filteredResults = animalArray;
+    let filteredResults = animalsArray;
     if (query.personalityTraits) {
         //Save personailtyTraits as a dedicated array.
         // If personailtyTraits is a string, place it into a new array and save.
@@ -64,6 +70,12 @@ app.get('/api/animals/:id', (req, res) => {
     } else {
         res.send(404);
     }
+});
+
+app.post('/api/animals', (req, res) => {
+    //req.body is where our incoming content will be 
+    console.log(req.body);
+    res.json(req.body);
 });
 
 app.listen(PORT, () => {
