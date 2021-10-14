@@ -1,93 +1,36 @@
+//allows us to use express throught the npm package
 const express = require('express');
+//allow us to use the fs(filesave) through the npm package
 const fs = require('fs');
+const { get } = require('http');
+//allows us to set paths by calling it through the npm package
 const path = require('path');
 
+
+//links our animals data through requiring it
 const { animals } = require('./data/animals');
 
+//allows for the port needed for heroku or 3002
 const PORT = process.env.PORT || 3002;
 
+//calls express now that it has been required
 const app = express();
+
+//middleware
+
+//instructs the server to make certain file readily available and not 
+//to gate it behind a server endpoint
+//makes static resources based off the file path we created
+app.use(express.static('public'));
+
 //parse incoming string or array data
 app.use(express.urlencoded({ extended: true }));
 //parse incoming JSO data
 app.use(express.json());
 
-
-function filterByQuery(query, animalsArray) {
-    let personalityTraitsArray = [];
-    //Not that we save the animalsArray as filteredResults here:
-    let filteredResults = animalsArray;
-    if (query.personalityTraits) {
-        //Save personailtyTraits as a dedicated array.
-        // If personailtyTraits is a string, place it into a new array and save.
-        if (typeof query.personalityTraits === 'string') {
-            personalityTraitsArray = [query.personalityTraits];
-        } else {
-            personalityTraitsArray = query.personalityTraits;
-        }
-        // Loop through each trait in the personailtyTraits array:
-        personalityTraitsArray.forEach(trait => {
-            // Check the trait against each animal in the filteredResults array.
-            // Remember, it is initially a copy of the animalsArray,
-            // but here we're updating it for each trait in the .forEach() loop.
-            // For each trait being targeted by the filter, the filteredResults
-            // array will then contain only the entries that contain the trait,
-            // so at the end we'll have an array of animals that have every one 
-            // of the traits when the .forEach() loop is finished.
-            filteredResults = filteredResults.filter(
-                animal => animal.personalityTraits.indexOf(trait) !== -1
-            );
-        });
-    }
-    if (query.diet) {
-        filteredResults = filteredResults.filter(animal => animal.diet === query.diet);
-    }
-    if (query.species) {
-        filteredResults = filteredResults.filter(animal => animal.species === query.species);
-    }
-    if (query.name) {
-        filteredResults = filteredResults.filter(animal => animal.name === query.name);
-    }
-    return filteredResults;
-}
-
-function findById(id, animalArray) {
-    const result = animalArray.filter(animal => animal.id === id)[0];
-    return result;
-};
-
-function createNewAnimal(body, animalsArray) {
-    //our function's main code will go here!
-    const animal = body;
-    animalsArray.push(animal);
-
-    fs.writeFileSync(
-        path.join(__dirname,'./data/animals.json'),
-        JSON.stringify({animals: animalsArray},null,2)
-    );
-
-    //return finished code to post route for response
-    return animal;
-}
-
-function validateAnimal(animal) {
-    if(!animal.name || typeof animal.name !== 'string'){
-        return false;
-    }
-    if (!animal.species || typeof animal.species !== 'string'){
-        return false;
-    }
-    if (!animal.diet || typeof animal.diet !== 'string'){
-        return false;
-    }
-    if (!animal.personalityTraits || !Array.isArray(animal.personalityTraits)) {
-        return false;
-    }
-}
-
-
-
-
+//routes
+//all routes have a request:req and a response: res, not all will use the request
+//the first part of the () is what is getting called i.e. /api/animals
 app.get('/api/animals', (req, res) => {
     let results = animals;
     if (req.query) {
@@ -105,6 +48,7 @@ app.get('/api/animals/:id', (req, res) => {
     }
 });
 
+//adds user information when adding a new animal
 app.post('/api/animals', (req, res) => {
     //set id based on what the next index of the array will be
     req.body.id = animals.length.toString();
@@ -118,6 +62,31 @@ app.post('/api/animals', (req, res) => {
   }
 });
 
+//the '/' brings us to the route folder
+app.get('/', (req,res) => {
+    //job is to respond with an HTML page to display in browser so
+    //we use res.sendFile() instead of res.json()
+    res.sendFile(path.join(__dirname,'./public/index.html'));
+});
+
+app.get('/animals', (req,res) => {
+    res.sendFile(path.join(__dirname,'.public/animals.html'));
+});
+
+//route that sends the HTML that is created from the zookeepers.html to the directory name given
+app.get('/zookeepers',(req,res) => {
+    res.sendFile(path.join(__dirname, './public/zookeepers.html'));
+});
+
+//route for a request that doesn't exist using a '*' 
+//should always come last in your routes 
+app.get('*',(req,res) => {
+    //tells the route to route back to the index.html file 
+    res.sendFile(path.join(__dirname, '.public/index.html'));
+});
+
+
+//allows the server to be looking for information and tells it where to find it at.
 app.listen(PORT, () => {
     console.log(`API server now on port ${PORT}!`);
 });
